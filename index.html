@@ -1,6 +1,491 @@
-  _____      _          ____  __      __ ______     _    _ 
- |_   _|    | |        / __ \ \ \    / /|  ____|   | |  | |
-   | |      | |       | |  | | \ \  / / | |__      | |  | |
-   | |      | |       | |  | |  \ \/ /  |  __|     | |  | |
-  _| |_     | |____   | |__| |   \  /   | |____    | |__| |
- |_____|    |______|   \____/     \/    |______|    \____/
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aljabar Quest: Final Version</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&family=Nunito:wght@400;700&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']], // Mengizinkan penggunaan $ untuk inline
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            svg: { fontCache: 'global' }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        :root {
+            --bg-color: #f0f4f8;
+            --card-color: #ffffff;
+            --primary: #4361ee;
+            --primary-dark: #3a0ca3;
+            --accent: #f72585;
+            --text: #2b2d42;
+        }
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            background: var(--card-color);
+            width: 100%;
+            max-width: 900px;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: linear-gradient(120deg, var(--primary), var(--primary-dark));
+            color: white;
+            padding: 25px;
+            text-align: center;
+        }
+
+        .header h1 { margin: 0; font-family: 'Fredoka', sans-serif; letter-spacing: 1px; }
+
+        .game-area { padding: 30px; flex-grow: 1; }
+        .hidden { display: none !important; }
+
+        /* INPUTS */
+        input, select {
+            width: 100%; padding: 15px; margin: 10px 0;
+            border: 2px solid #e2e8f0; border-radius: 12px;
+            font-size: 1rem; box-sizing: border-box;
+            font-family: inherit;
+        }
+        input:focus { border-color: var(--primary); outline: none; }
+
+        /* BUTTONS */
+        .btn-main {
+            background: var(--accent); color: white; border: none;
+            padding: 15px 40px; font-size: 1.1rem; border-radius: 50px;
+            cursor: pointer; width: 100%; margin-top: 20px;
+            font-weight: bold; transition: transform 0.2s;
+            box-shadow: 0 4px 15px rgba(247, 37, 133, 0.4);
+        }
+        .btn-main:hover { transform: translateY(-2px); filter: brightness(1.1); }
+
+        .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 25px; }
+        .btn-option {
+            background: white; border: 2px solid var(--primary); color: var(--text);
+            padding: 20px; border-radius: 15px; cursor: pointer;
+            font-size: 1.1rem; transition: 0.2s; font-weight: 600;
+        }
+        .btn-option:hover { background: var(--primary); color: white; transform: scale(1.02); }
+
+        /* DRAG DROP */
+        .source-box { 
+            background: #e0f7fa; padding: 20px; border-radius: 15px; 
+            border: 2px dashed #00bcd4; display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;
+        }
+        .target-area { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-top: 20px; }
+        .drop-zone {
+            background: #f8f9fa; border: 2px solid #cbd5e1; border-radius: 12px;
+            padding: 10px; min-height: 100px;
+        }
+        .drop-zone h4 { margin: 0 0 10px 0; color: var(--primary); text-align: center; }
+        .draggable-item {
+            background: white; border: 2px solid var(--accent); padding: 8px 16px;
+            border-radius: 20px; cursor: grab; font-weight: bold; font-size: 0.9em;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        /* PROGRESS & SCORE */
+        .info-bar {
+            display: flex; justify-content: space-between; margin-bottom: 20px;
+            font-weight: bold; color: var(--text);
+        }
+        .progress-track { height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden; margin-bottom: 25px; }
+        .progress-fill { height: 100%; background: var(--accent); width: 0%; transition: width 0.5s ease; }
+
+        /* TABLE */
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th { background: var(--primary); color: white; padding: 12px; }
+        td { padding: 12px; border-bottom: 1px solid #ddd; text-align: center; }
+        tr:nth-child(even) { background-color: #f8f9fa; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>Aljabar Quest</h1>
+        <p>Misi Penyelamat Angka</p>
+    </div>
+
+    <div class="game-area">
+        <div id="login-screen">
+            <h3>Identitas Siswa</h3>
+            <input type="text" id="nama" placeholder="Nama Lengkap" autocomplete="off">
+            <input type="number" id="absen" placeholder="Nomor Absen">
+            <select id="kelas">
+                <option value="">-- Pilih Kelas --</option>
+                <option value="-">-</option>
+                <option value="7A">7A</option>
+                <option value="7B">7B</option>
+                <option value="7C">7C</option>
+                <option value="7D">7D</option>
+                <option value="7E">7E</option>
+                <option value="7F">7F</option>
+            </select>
+            <button class="btn-main" onclick="initGame()">Mulai Petualangan (20 Menit)</button>
+        </div>
+
+        <div id="game-screen" class="hidden">
+            <div class="info-bar">
+                <span id="player-name">Player</span>
+                <span id="score-display">Skor: 0</span>
+            </div>
+            <div class="progress-track">
+                <div id="progress-fill" class="progress-fill"></div>
+            </div>
+            
+            <div id="question-container"></div>
+        </div>
+
+        <div id="result-screen" class="hidden" style="text-align: center;">
+            <h2>Misi Selesai!</h2>
+            <h1 id="final-score" style="font-size: 4em; color: var(--accent); margin: 10px 0;">0</h1>
+            <button id="btn-submit" class="btn-main" onclick="submitScore()">Kirim ke Papan Peringkat</button>
+            <div id="leaderboard-area" style="margin-top: 30px;"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- KONFIGURASI GAME ---
+    const CONFIG = {
+        totalQuestions: 20, 
+        scriptUrl: "URL_APPS_SCRIPT_ANDA_DISINI" // JANGAN LUPA GANTI INI
+    };
+
+    // --- BANK SOAL (DIPERBAIKI TANDA KURUNGNYA) ---
+    // Perhatikan: Semua rumus menggunakan tanda $ satu kali (inline) 
+    // agar menyatu dengan teks. Tanda kurung dimasukkan ke dalam $...$.
+    
+    const QUESTION_BANK = {
+        // LEVEL 1: DRAG & DROP
+        level1: [
+            {
+                instruction: "Kelompokkan unsur dari bentuk: $4x^2 - 7y + 9$",
+                buckets: ["Variabel", "Koefisien", "Konstanta"],
+                items: [
+                    {text: "$x^2$", bucket: "Variabel"}, {text: "$y$", bucket: "Variabel"},
+                    {text: "4", bucket: "Koefisien"}, {text: "-7", bucket: "Koefisien"},
+                    {text: "9", bucket: "Konstanta"}
+                ]
+            },
+            {
+                instruction: "Analisis bentuk aljabar: $-2a + 5b^2 - 12$",
+                buckets: ["Variabel", "Koefisien", "Konstanta"],
+                items: [
+                    {text: "$a$", bucket: "Variabel"}, {text: "$b^2$", bucket: "Variabel"},
+                    {text: "-2", bucket: "Koefisien"}, {text: "5", bucket: "Koefisien"},
+                    {text: "-12", bucket: "Konstanta"}
+                ]
+            }
+        ],
+
+        // LEVEL 2: SUKU SEJENIS
+        level2: [
+            {q: "Suku yang sejenis dengan $3x^2y$ adalah...", opts: ["$5xy^2$", "$-2x^2y$", "$3x^2$", "$3y$"], ans: 1},
+            {q: "Pasangan suku sejenis di bawah ini adalah...", opts: ["$2a$ dan $2b$", "$5x$ dan $x^2$", "$-3y$ dan $y$", "$4p$ dan $4$"], ans: 2},
+            {q: "Manakah suku yang sejenis dengan $abc$?", opts: ["$ab$", "$bc$", "$-5abc$", "$a^2bc$"], ans: 2},
+            {q: "Kelompok suku sejenis dari $2x + 3y - x + 5y$ adalah...", opts: ["$2x$ dan $3y$", "$2x$ dan $-x$", "$3y$ dan $5x$", "$-x$ dan $5x$"], ans: 1},
+            {q: "Suku yang BUKAN sejenis dengan $7m$ adalah...", opts: ["$-m$", "$2m$", "$m^2$", "$100m$"], ans: 2}
+        ],
+
+        // LEVEL 3: OPERASI ALJABAR
+        // Perhatikan tanda kurung sekarang ada di DALAM tanda $
+        level3: [
+            {q: "Hasil dari $(3x + 2) + (4x - 5)$ adalah...", opts: ["$7x - 3$", "$7x + 7$", "$x - 3$", "$7x + 3$"], ans: 0},
+            {q: "Sederhanakan: $5a - 2b + 3a + 7b$", opts: ["$8a + 9b$", "$2a + 5b$", "$8a + 5b$", "$8a - 5b$"], ans: 2},
+            {q: "Hasil dari $3(2x - 4)$ adalah...", opts: ["$6x - 4$", "$6x - 12$", "$5x - 7$", "$6x + 12$"], ans: 1},
+            {q: "Hasil dari $(2x - 3) - (x + 4)$ adalah...", opts: ["$x - 7$", "$x + 1$", "$3x + 1$", "$x - 1$"], ans: 0},
+            {q: "Perkalian $a(a + 3)$ menghasilkan...", opts: ["$2a + 3$", "$a^2 + 3a$", "$a^2 + 3$", "$3a^2$"], ans: 1},
+            {q: "Bentuk sederhana dari $4x - (2x - 5)$ adalah...", opts: ["$2x - 5$", "$2x + 5$", "$6x - 5$", "$2x$"], ans: 1},
+            {q: "Kurangkan $(3p - 2)$ dari $(5p + 4)$. Hasilnya...", opts: ["$2p + 6$", "$-2p - 6$", "$2p + 2$", "$8p + 2$"], ans: 0},
+            {q: "Hasil kali $(x+2)(x+3)$ adalah...", opts: ["$x^2+5x+6$", "$x^2+6x+5$", "$x^2+5x+5$", "$2x+5$"], ans: 0}
+        ],
+
+        // LEVEL 4: PECAHAN ALJABAR
+        level4: [
+            {q: "Sederhanakan: $\\frac{4x}{2}$", opts: ["$2x$", "$x$", "$2$", "$4$"], ans: 0},
+            {q: "Hasil dari $\\frac{x}{3} + \\frac{x}{2}$", opts: ["$\\frac{2x}{5}$", "$\\frac{5x}{6}$", "$\\frac{x^2}{6}$", "$\\frac{2x}{6}$"], ans: 1},
+            {q: "Bentuk sederhana dari $\\frac{3ab}{a}$", opts: ["$3b$", "$3a$", "$b$", "$3$"], ans: 0},
+            {q: "Hasil $\\frac{2x}{5} \\times \\frac{10}{x}$ adalah...", opts: ["$20$", "$4$", "$2$", "$4x$"], ans: 1},
+            {q: "Sederhanakan $\\frac{x^2 + 3x}{x}$", opts: ["$x + 3$", "$x^2 + 3$", "$4x$", "$x + 3x$"], ans: 0}
+        ],
+
+        // LEVEL 5: PEMODELAN
+        // Tanda kurung (x+5) kini menyatu dalam rumus $(x+5)$
+        level5: [
+            {q: "Panjang persegi panjang adalah $(x+5)$ cm dan lebar 4 cm. Kelilingnya 48 cm. Jika dimodelkan ke dalam persamaan aljabar, maka persamaan aljabarnya adalah ...", ans: "2x+18=48"},
+            {q: "Umur Ibu 3 kali umur Budi ($x$). Lima tahun lagi umur Ibu 50 tahun. Jika dimodelkan ke dalam persamaan aljabar, maka persamaan aljabarnya adalah ...", ans: "3x+5=50"},
+            {q: "Sebuah bilangan $x$ dikalikan 2 lalu ditambah 7 hasilnya 15. Jika dimodelkan ke dalam persamaan aljabar, maka persamaan aljabarnya adalah ...", ans: "2x+7=15"},
+            {q: "Harga buku $x$ rupiah. Harga pensil $y$ rupiah. Harga 2 buku dan 3 pensil adalah 10.000. Jika dimodelkan ke dalam persamaan aljabar, maka persamaan aljabarnya adalah ...", ans: "2x+3y=10000"},
+            {q: "Suatu segitiga sisinya $x$, $(x+2)$, dan $(x+4)$. Kelilingnya 24. Jika dimodelkan ke dalam persamaan aljabar, maka persamaan aljabarnya adalah ...", ans: "3x+6=24"},
+            {q: "Jumlah dua bilangan berurutan $x$ dan $(x+1)$ adalah 21. Jika dimodelkan ke dalam persamaan aljabar, maka persamaan aljabarnya adalah ...", ans: "2x+1=21"}
+        ]
+    };
+
+    // --- STATE MANAGEMENT ---
+    let state = {
+        player: {},
+        score: 0,
+        sessionQuestions: [], 
+        currentQIndex: 0
+    };
+
+    // --- UTILITIES ---
+    function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+    }
+
+    function getRandomSubarray(arr, size) {
+        let shuffled = arr.slice(0), i = arr.length, min = i - size, temp, index;
+        while (i-- > min) {
+            index = Math.floor((i + 1) * Math.random());
+            temp = shuffled[index];
+            shuffled[index] = shuffled[i];
+            shuffled[i] = temp;
+        }
+        return shuffled.slice(min);
+    }
+
+    // --- GAME LOGIC ---
+    function initGame() {
+        const n = document.getElementById('nama').value;
+        const a = document.getElementById('absen').value;
+        const k = document.getElementById('kelas').value;
+
+        if(!n || !a || !k) { Swal.fire('Data Belum Lengkap', 'Isi nama, absen, dan kelas dulu ya!', 'warning'); return; }
+
+        state.player = { nama: n, absen: a, kelas: k };
+        
+        // BUILD SESSION (20 Soal)
+        state.sessionQuestions = [];
+        
+        const q1 = getRandomSubarray(QUESTION_BANK.level1, 1)[0]; q1.type = 'dragdrop';
+        state.sessionQuestions.push(q1);
+
+        const q2 = getRandomSubarray(QUESTION_BANK.level2, 5); q2.forEach(q => q.type = 'choice');
+        state.sessionQuestions = state.sessionQuestions.concat(q2);
+
+        const q3 = getRandomSubarray(QUESTION_BANK.level3, 6); q3.forEach(q => q.type = 'choice');
+        state.sessionQuestions = state.sessionQuestions.concat(q3);
+
+        const q4 = getRandomSubarray(QUESTION_BANK.level4, 4); q4.forEach(q => q.type = 'choice');
+        state.sessionQuestions = state.sessionQuestions.concat(q4);
+
+        const q5 = getRandomSubarray(QUESTION_BANK.level5, 4); q5.forEach(q => q.type = 'input');
+        state.sessionQuestions = state.sessionQuestions.concat(q5);
+
+        // UI Setup
+        document.getElementById('login-screen').classList.add('hidden');
+        document.getElementById('game-screen').classList.remove('hidden');
+        document.getElementById('player-name').innerText = `Petualang: ${n} (${k})`;
+        
+        loadQuestion();
+    }
+
+    function loadQuestion() {
+        if (state.currentQIndex >= state.sessionQuestions.length) {
+            finishGame();
+            return;
+        }
+
+        const qData = state.sessionQuestions[state.currentQIndex];
+        const container = document.getElementById('question-container');
+        container.innerHTML = ""; 
+
+        const pct = ((state.currentQIndex) / CONFIG.totalQuestions) * 100;
+        document.getElementById('progress-fill').style.width = `${pct}%`;
+
+        let title = "";
+        if(qData.type === 'dragdrop') title = "Unsur Aljabar";
+        else if(qData.type === 'choice') title = "Pilihan Ganda";
+        else title = "Pemodelan Aljabar";
+
+        container.innerHTML = `<h3 style="text-align:center; color:#555">Soal ${state.currentQIndex + 1}/${CONFIG.totalQuestions}: ${title}</h3>`;
+
+        if (qData.type === 'dragdrop') renderDragDrop(qData, container);
+        else if (qData.type === 'choice') renderChoice(qData, container);
+        else if (qData.type === 'input') renderInput(qData, container);
+
+        // Force MathJax Reprocess
+        MathJax.typesetPromise();
+    }
+
+    // --- RENDERERS ---
+    function renderDragDrop(data, container) {
+        container.innerHTML += `<div style="font-size:1.2em; text-align:center; margin-bottom:20px">${data.instruction}</div>`;
+        
+        let sourceHtml = `<div id="source-items" class="source-box">`;
+        shuffleArray(data.items).forEach(item => {
+            sourceHtml += `<div class="draggable-item" data-bucket="${item.bucket}">${item.text}</div>`;
+        });
+        sourceHtml += `</div>`;
+
+        let targetHtml = `<div class="target-area">`;
+        data.buckets.forEach(bucket => {
+            targetHtml += `<div class="drop-zone" data-bucket="${bucket}"><h4>${bucket}</h4><div class="bucket-content"></div></div>`;
+        });
+        targetHtml += `</div>`;
+        targetHtml += `<button class="btn-main" onclick="checkDragDrop()">Cek Susunan</button>`;
+
+        container.innerHTML += sourceHtml + targetHtml;
+
+        new Sortable(document.getElementById('source-items'), { group: 'shared', animation: 150 });
+        document.querySelectorAll('.bucket-content').forEach(el => {
+            new Sortable(el, { group: 'shared', animation: 150 });
+        });
+    }
+
+    function renderChoice(data, container) {
+        container.innerHTML += `<div style="font-size:1.3em; margin:20px 0; font-weight:bold">${data.q}</div>`;
+        let html = `<div class="options-grid">`;
+        data.opts.forEach((opt, idx) => {
+            let isCorrect = (idx === data.ans);
+            html += `<button class="btn-option" onclick="submitAnswer(${isCorrect})">${opt}</button>`;
+        });
+        html += `</div>`;
+        container.innerHTML += html;
+    }
+
+    function renderInput(data, container) {
+        container.innerHTML += `<div style="font-size:1.2em; margin-bottom:10px">${data.q}</div>`;
+        container.innerHTML += `<small style="color:#d63031">*Tulis tanpa spasi, gunakan huruf kecil. Contoh: 2x+5=10</small>`;
+        container.innerHTML += `<input type="text" id="ans-input" placeholder="Jawaban kamu..." autocomplete="off">`;
+        container.innerHTML += `<button class="btn-main" onclick="checkInput('${data.ans}')">Kunci Jawaban</button>`;
+    }
+
+    // --- CHECKERS ---
+    function checkDragDrop() {
+        const qData = state.sessionQuestions[state.currentQIndex];
+        let correct = 0;
+        let total = qData.items.length;
+        
+        document.querySelectorAll('.drop-zone').forEach(zone => {
+            const bucket = zone.getAttribute('data-bucket');
+            zone.querySelectorAll('.draggable-item').forEach(item => {
+                if(item.getAttribute('data-bucket') === bucket) correct++;
+            });
+        });
+
+        if(correct === total) submitAnswer(true);
+        else Swal.fire({icon: 'error', title: 'Belum Tepat', text: 'Periksa kembali susunan elemen aljabarnya!'});
+    }
+
+    function checkInput(key) {
+        let val = document.getElementById('ans-input').value.replace(/\s/g, '').toLowerCase();
+        let correctKey = key.replace(/\s/g, '').toLowerCase();
+        
+        if(val === correctKey) submitAnswer(true);
+        else {
+            Swal.fire({
+                icon: 'error', 
+                title: 'Salah', 
+                html: `Jawaban yang benar: <b>${key}</b>`
+            }).then(() => submitAnswer(false, true));
+        }
+    }
+
+    function submitAnswer(isCorrect, skipAlert = false) {
+        if (isCorrect) {
+            state.score += 5; 
+            if(!skipAlert) {
+                Swal.fire({
+                    icon: 'success', title: 'Benar!', 
+                    timer: 800, showConfirmButton: false, position: 'center'
+                }).then(() => nextQ());
+            } else { nextQ(); }
+        } else {
+            if(!skipAlert) {
+                Swal.fire({
+                    icon: 'error', title: 'Salah!', 
+                    timer: 800, showConfirmButton: false
+                }).then(() => nextQ());
+            } else { nextQ(); }
+        }
+        document.getElementById('score-display').innerText = `Skor: ${state.score}`;
+    }
+
+    function nextQ() {
+        state.currentQIndex++;
+        loadQuestion();
+    }
+
+    // --- END GAME ---
+    function finishGame() {
+        document.getElementById('game-screen').classList.add('hidden');
+        document.getElementById('result-screen').classList.remove('hidden');
+        document.getElementById('final-score').innerText = state.score;
+        fetchLeaderboard();
+    }
+
+    function submitScore() {
+        const btn = document.getElementById('btn-submit');
+        btn.innerHTML = 'Mengirim...'; btn.disabled = true;
+
+        const formData = new FormData();
+        formData.append('nama', state.player.nama);
+        formData.append('kelas', state.player.kelas);
+        formData.append('skor', state.score);
+        formData.append('action', 'submit');
+
+        fetch(CONFIG.scriptUrl, { method: 'POST', body: formData })
+            .then(r => r.json())
+            .then(() => {
+                Swal.fire('Sukses', 'Skor tercatat!', 'success');
+                btn.innerText = "Terkirim";
+                fetchLeaderboard();
+            })
+            .catch(() => {
+                Swal.fire('Gagal', 'Koneksi bermasalah', 'error');
+                btn.disabled = false;
+            });
+    }
+
+    function fetchLeaderboard() {
+        const div = document.getElementById('leaderboard-area');
+        div.innerHTML = "<em>Memuat klasemen...</em>";
+        
+        fetch(CONFIG.scriptUrl + "?action=get")
+            .then(r => r.json())
+            .then(data => {
+                let html = `<table><tr><th>#</th><th>Nama</th><th>Kelas</th><th>Skor</th></tr>`;
+                data.slice(0, 10).forEach((d, i) => {
+                    html += `<tr><td>${i+1}</td><td>${d.nama}</td><td>${d.kelas}</td><td><strong>${d.skor}</strong></td></tr>`;
+                });
+                html += `</table>`;
+                div.innerHTML = html;
+            });
+    }
+</script>
+
+</body>
+</html>
